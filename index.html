@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram Casino</title>
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        #game-box {
+            background: #2b2b2b;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        button {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:disabled { background: #555; }
+    </style>
+</head>
+<body>
+    <h2>Slot / Coin Flip Demo</h2>
+    <div id="game-box">
+        <p>Balance: $<span id="balance">0.00</span></p>
+        <p id="status">Place your bet</p>
+        <button id="spin-btn" onclick="playGame()">Play ($1.00)</button>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const API_URL = "https://your-backend-domain.com/api";
+
+        async function playGame() {
+            const btn = document.getElementById("spin-btn");
+            const status = document.getElementById("status");
+            btn.disabled = true;
+            status.innerText = "Processing bet on server...";
+
+            try {
+                const response = await fetch(`${API_URL}/play`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        initData: tg.initData, // Sends cryptographically signed user session
+                        betAmount: 1.00
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    status.innerText = "Error: " + data.message;
+                    btn.disabled = false;
+                    return;
+                }
+
+                // Render server-determined outcome
+                status.innerText = data.win ? `YOU WON $${data.payout}!` : "YOU LOST!";
+                document.getElementById("balance").innerText = data.newBalance.toFixed(2);
+            } catch (err) {
+                status.innerText = "Network Error";
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
